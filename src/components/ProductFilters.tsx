@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 
 interface Category {
@@ -8,6 +8,9 @@ interface Category {
   value: string;
   count: number;
 }
+
+const DEFAULT_MIN_PRICE = 0;
+const DEFAULT_MAX_PRICE = 5000000;
 
 interface ProductFiltersProps {
   categories: Category[];
@@ -35,6 +38,19 @@ export default function ProductFilters({
     brand: true,
     price: true
   });
+  const [priceInputs, setPriceInputs] = useState({
+    min: priceRange[0].toString(),
+    max: priceRange[1].toString()
+  });
+  const [activePriceField, setActivePriceField] = useState<null | 'min' | 'max'>(null);
+
+  useEffect(() => {
+    if (activePriceField) return;
+    setPriceInputs({
+      min: priceRange[0].toString(),
+      max: priceRange[1].toString()
+    });
+  }, [priceRange[0], priceRange[1], activePriceField]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -49,6 +65,28 @@ export default function ProductFilters({
     } else {
       onBrandsChange([...selectedBrands, brand]);
     }
+  };
+
+  const handlePriceInputChange = (field: 'min' | 'max', value: string) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      setPriceInputs(prev => {
+        const updated = { ...prev, [field]: value };
+        const minValue = updated.min === '' ? DEFAULT_MIN_PRICE : Number(updated.min);
+        const maxValue = updated.max === '' ? DEFAULT_MAX_PRICE : Number(updated.max);
+
+        onPriceRangeChange([minValue, maxValue]);
+        return updated;
+      });
+    }
+  };
+
+  const applyPriceRange = (min: number, max: number) => {
+    onPriceRangeChange([min, max]);
+    setPriceInputs({
+      min: min.toString(),
+      max: max.toString()
+    });
+    setActivePriceField(null);
   };
 
   const formatPrice = (price: number) => {
@@ -67,7 +105,7 @@ export default function ProductFilters({
           onClick={() => {
             onCategoryChange('all');
             onBrandsChange([]);
-            onPriceRangeChange([0, 5000000]);
+            applyPriceRange(DEFAULT_MIN_PRICE, DEFAULT_MAX_PRICE);
           }}
           className="text-sm text-blue-600 hover:text-blue-700"
         >
@@ -163,17 +201,21 @@ export default function ProductFilters({
             <div className="flex items-center space-x-2">
               <input
                 type="number"
-                value={priceRange[0]}
-                onChange={(e) => onPriceRangeChange([Number(e.target.value), priceRange[1]])}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                value={priceInputs.min}
+                onChange={(e) => handlePriceInputChange('min', e.target.value)}
+                onFocus={() => setActivePriceField('min')}
+                onBlur={() => setActivePriceField(null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                 placeholder="Từ"
               />
               <span className="text-gray-500">-</span>
               <input
                 type="number"
-                value={priceRange[1]}
-                onChange={(e) => onPriceRangeChange([priceRange[0], Number(e.target.value)])}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                value={priceInputs.max}
+                onChange={(e) => handlePriceInputChange('max', e.target.value)}
+                onFocus={() => setActivePriceField('max')}
+                onBlur={() => setActivePriceField(null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900"
                 placeholder="Đến"
               />
             </div>
@@ -185,31 +227,31 @@ export default function ProductFilters({
             {/* Quick Price Filters */}
             <div className="space-y-2">
               <button
-                onClick={() => onPriceRangeChange([0, 500000])}
+                onClick={() => applyPriceRange(0, 500000)}
                 className="block w-full text-left text-sm text-gray-700 hover:text-blue-600"
               >
                 Dưới {formatPrice(500000)}
               </button>
               <button
-                onClick={() => onPriceRangeChange([500000, 1000000])}
+                onClick={() => applyPriceRange(500000, 1000000)}
                 className="block w-full text-left text-sm text-gray-700 hover:text-blue-600"
               >
                 {formatPrice(500000)} - {formatPrice(1000000)}
               </button>
               <button
-                onClick={() => onPriceRangeChange([1000000, 2000000])}
+                onClick={() => applyPriceRange(1000000, 2000000)}
                 className="block w-full text-left text-sm text-gray-700 hover:text-blue-600"
               >
                 {formatPrice(1000000)} - {formatPrice(2000000)}
               </button>
               <button
-                onClick={() => onPriceRangeChange([2000000, 5000000])}
+                onClick={() => applyPriceRange(2000000, 5000000)}
                 className="block w-full text-left text-sm text-gray-700 hover:text-blue-600"
               >
                 {formatPrice(2000000)} - {formatPrice(5000000)}
               </button>
               <button
-                onClick={() => onPriceRangeChange([5000000, 10000000])}
+                onClick={() => applyPriceRange(5000000, 10000000)}
                 className="block w-full text-left text-sm text-gray-700 hover:text-blue-600"
               >
                 Trên {formatPrice(5000000)}

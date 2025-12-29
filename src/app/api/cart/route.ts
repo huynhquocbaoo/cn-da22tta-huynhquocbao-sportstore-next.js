@@ -1,34 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { getConnection } from '@/lib/database';
-import { config } from '@/lib/config';
-
-function getUserIdFromToken(request: NextRequest): number | null {
-  try {
-    // Đọc token từ header Authorization
-    let token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
-    // Nếu không có token từ header, đọc từ cookie
-    if (!token) {
-      token = request.cookies.get('token')?.value;
-    }
-    
-    if (!token) return null;
-    
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
+import { getUserIdFromRequest } from '@/lib/auth';
 
 // GET - Lấy giỏ hàng của user
 export async function GET(request: NextRequest) {
   try {
-    const userId = getUserIdFromToken(request);
+    const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
-        { error: 'Chưa đăng nhập' },
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
         { status: 401 }
       );
     }
@@ -69,10 +49,10 @@ export async function GET(request: NextRequest) {
 // POST - Thêm sản phẩm vào giỏ hàng
 export async function POST(request: NextRequest) {
   try {
-    const userId = getUserIdFromToken(request);
+    const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
-        { error: 'Chưa đăng nhập' },
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
         { status: 401 }
       );
     }
@@ -91,56 +71,56 @@ export async function POST(request: NextRequest) {
     
     try {
       // Kiểm tra xem sản phẩm có tồn tại không
-    console.log('Looking for product ID:', productId);
-    const [products] = await conn.execute(
-      'SELECT id, stock FROM products WHERE id = ?',
-      [productId]
-    );
-
-    console.log('Found products:', products);
-
-    if ((products as any).length === 0) {
-      return NextResponse.json(
-        { error: `Sản phẩm với ID ${productId} không tồn tại` },
-        { status: 404 }
+      console.log('Looking for product ID:', productId);
+      const [products] = await conn.execute(
+        'SELECT id, stock FROM products WHERE id = ?',
+        [productId]
       );
-    }
 
-    const product = (products as any)[0];
-    if (product.stock < quantity) {
-      return NextResponse.json(
-        { error: 'Không đủ hàng trong kho' },
-        { status: 400 }
-      );
-    }
+      console.log('Found products:', products);
 
-    // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
-    const [existingItems] = await conn.execute(
-      'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?',
-      [userId, productId]
-    );
+      if ((products as any).length === 0) {
+        return NextResponse.json(
+          { error: `Sản phẩm với ID ${productId} không tồn tại` },
+          { status: 404 }
+        );
+      }
 
-    if ((existingItems as any).length > 0) {
-      // Cập nhật số lượng
-      const newQuantity = (existingItems as any)[0].quantity + quantity;
-      if (newQuantity > product.stock) {
+      const product = (products as any)[0];
+      if (product.stock < quantity) {
         return NextResponse.json(
           { error: 'Không đủ hàng trong kho' },
           { status: 400 }
         );
       }
-      
-      await conn.execute(
-        'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
-        [newQuantity, userId, productId]
+
+      // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
+      const [existingItems] = await conn.execute(
+        'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?',
+        [userId, productId]
       );
-    } else {
-      // Thêm mới vào giỏ hàng
-      await conn.execute(
-        'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
-        [userId, productId, quantity]
-      );
-    }
+
+      if ((existingItems as any).length > 0) {
+        // Cập nhật số lượng
+        const newQuantity = (existingItems as any)[0].quantity + quantity;
+        if (newQuantity > product.stock) {
+          return NextResponse.json(
+            { error: 'Không đủ hàng trong kho' },
+            { status: 400 }
+          );
+        }
+        
+        await conn.execute(
+          'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
+          [newQuantity, userId, productId]
+        );
+      } else {
+        // Thêm mới vào giỏ hàng
+        await conn.execute(
+          'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
+          [userId, productId, quantity]
+        );
+      }
 
       return NextResponse.json({ message: 'Đã thêm vào giỏ hàng' });
     } finally {
@@ -166,10 +146,10 @@ export async function POST(request: NextRequest) {
 // PUT - Cập nhật số lượng sản phẩm trong giỏ hàng
 export async function PUT(request: NextRequest) {
   try {
-    const userId = getUserIdFromToken(request);
+    const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
-        { error: 'Chưa đăng nhập' },
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
         { status: 401 }
       );
     }
@@ -196,30 +176,30 @@ export async function PUT(request: NextRequest) {
       } else {
         // Kiểm tra stock
         const [products] = await conn.execute(
-        'SELECT stock FROM products WHERE id = ?',
-        [productId]
-      );
+          'SELECT stock FROM products WHERE id = ?',
+          [productId]
+        );
 
-      if ((products as any).length === 0) {
-        return NextResponse.json(
-          { error: 'Sản phẩm không tồn tại' },
-          { status: 404 }
+        if ((products as any).length === 0) {
+          return NextResponse.json(
+            { error: 'Sản phẩm không tồn tại' },
+            { status: 404 }
+          );
+        }
+
+        if ((products as any)[0].stock < quantity) {
+          return NextResponse.json(
+            { error: 'Không đủ hàng trong kho' },
+            { status: 400 }
+          );
+        }
+
+        // Cập nhật số lượng
+        await conn.execute(
+          'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
+          [quantity, userId, productId]
         );
       }
-
-      if ((products as any)[0].stock < quantity) {
-        return NextResponse.json(
-          { error: 'Không đủ hàng trong kho' },
-          { status: 400 }
-        );
-      }
-
-      // Cập nhật số lượng
-      await conn.execute(
-        'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
-        [quantity, userId, productId]
-      );
-    }
 
       return NextResponse.json({ message: 'Đã cập nhật giỏ hàng' });
     } finally {
@@ -245,10 +225,10 @@ export async function PUT(request: NextRequest) {
 // DELETE - Xóa sản phẩm khỏi giỏ hàng
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = getUserIdFromToken(request);
+    const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json(
-        { error: 'Chưa đăng nhập' },
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
         { status: 401 }
       );
     }

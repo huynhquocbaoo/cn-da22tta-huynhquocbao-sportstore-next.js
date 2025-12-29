@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     // Lưu file
     await writeFile(filePath, buffer);
 
-    // Trả về URL của ảnh
-    const imageUrl = `/uploads/${fileName}`;
+    // Trả về URL của ảnh qua API route để bypass static cache
+    const imageUrl = `/api/uploads/${fileName}`;
 
     return NextResponse.json({ 
       success: true, 

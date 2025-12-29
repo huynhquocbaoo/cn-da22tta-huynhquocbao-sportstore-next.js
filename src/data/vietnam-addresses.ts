@@ -18,7 +18,7 @@ export interface Ward {
 export const vietnamAddresses: Province[] = [
   {
     code: "01",
-    name: "Hà Nội",
+    name: "TP. Hà Nội",
     districts: [
       {
         code: "001",
@@ -204,7 +204,7 @@ export const vietnamAddresses: Province[] = [
   },
   {
     code: "79",
-    name: "Hồ Chí Minh",
+    name: "TP. Hồ Chí Minh",
     districts: [
       {
         code: "760",
@@ -450,7 +450,7 @@ export const vietnamAddresses: Province[] = [
   },
   {
     code: "31",
-    name: "Hải Phòng",
+    name: "TP. Hải Phòng",
     districts: [
       {
         code: "311",
@@ -494,7 +494,7 @@ export const vietnamAddresses: Province[] = [
   },
   {
     code: "48",
-    name: "Đà Nẵng",
+    name: "TP. Đà Nẵng",
     districts: [
       {
         code: "490",
@@ -529,6 +529,246 @@ export const vietnamAddresses: Province[] = [
           { code: "20290", name: "Phường Thạc Gián" }
         ]
       }
+    ]
+  },
+  {
+    code: "02",
+    name: "An Giang",
+    districts: [
+      { code: "021", name: "TP. Long Xuyên", wards: [{ code: "02101", name: "Phường Mỹ Bình" }] },
+      { code: "022", name: "TP. Châu Đốc", wards: [{ code: "02201", name: "Phường Châu Phú A" }] }
+    ]
+  },
+  {
+    code: "03",
+    name: "Bắc Ninh",
+    districts: [
+      { code: "031", name: "TP. Bắc Ninh", wards: [{ code: "03101", name: "Phường Vũ Ninh" }] },
+      { code: "032", name: "TP. Từ Sơn", wards: [{ code: "03201", name: "Phường Đông Ngàn" }] }
+    ]
+  },
+  {
+    code: "04",
+    name: "Cà Mau",
+    districts: [
+      { code: "041", name: "TP. Cà Mau", wards: [{ code: "04101", name: "Phường 1" }] },
+      { code: "042", name: "Huyện Đầm Dơi", wards: [{ code: "04201", name: "Thị trấn Đầm Dơi" }] }
+    ]
+  },
+  {
+    code: "05",
+    name: "Cao Bằng",
+    districts: [
+      { code: "051", name: "TP. Cao Bằng", wards: [{ code: "05101", name: "Phường Sông Bằng" }] },
+      { code: "052", name: "Huyện Bảo Lâm", wards: [{ code: "05201", name: "Thị trấn Pác Miầu" }] }
+    ]
+  },
+  {
+    code: "06",
+    name: "TP. Cần Thơ",
+    districts: [
+      { code: "061", name: "Quận Ninh Kiều", wards: [{ code: "06101", name: "Phường Cái Khế" }] },
+      { code: "062", name: "Quận Bình Thủy", wards: [{ code: "06201", name: "Phường Bình Thủy" }] }
+    ]
+  },
+  {
+    code: "07",
+    name: "Đắk Lắk",
+    districts: [
+      { code: "071", name: "TP. Buôn Ma Thuột", wards: [{ code: "07101", name: "Phường Tân Lập" }] },
+      { code: "072", name: "Thị xã Buôn Hồ", wards: [{ code: "07201", name: "Phường An Lạc" }] }
+    ]
+  },
+  {
+    code: "08",
+    name: "Điện Biên",
+    districts: [
+      { code: "081", name: "TP. Điện Biên Phủ", wards: [{ code: "08101", name: "Phường Noong Bua" }] },
+      { code: "082", name: "Thị xã Mường Lay", wards: [{ code: "08201", name: "Phường Sông Đà" }] }
+    ]
+  },
+  {
+    code: "09",
+    name: "Đồng Nai",
+    districts: [
+      { code: "091", name: "TP. Biên Hòa", wards: [{ code: "09101", name: "Phường Trảng Dài" }] },
+      { code: "092", name: "TP. Long Khánh", wards: [{ code: "09201", name: "Phường Xuân An" }] }
+    ]
+  },
+  {
+    code: "10",
+    name: "Đồng Tháp",
+    districts: [
+      { code: "101", name: "TP. Cao Lãnh", wards: [{ code: "10101", name: "Phường 1" }] },
+      { code: "102", name: "TP. Sa Đéc", wards: [{ code: "10201", name: "Phường 1" }] }
+    ]
+  },
+  {
+    code: "11",
+    name: "Gia Lai",
+    districts: [
+      { code: "111", name: "TP. Pleiku", wards: [{ code: "11101", name: "Phường Diên Hồng" }] },
+      { code: "112", name: "Thị xã An Khê", wards: [{ code: "11201", name: "Phường An Bình" }] }
+    ]
+  },
+  {
+    code: "12",
+    name: "Hà Tĩnh",
+    districts: [
+      { code: "121", name: "TP. Hà Tĩnh", wards: [{ code: "12101", name: "Phường Trần Phú" }] },
+      { code: "122", name: "Thị xã Hồng Lĩnh", wards: [{ code: "12201", name: "Phường Bắc Hồng" }] }
+    ]
+  },
+  {
+    code: "13",
+    name: "TP. Huế",
+    districts: [
+      { code: "131", name: "Quận Phú Xuân", wards: [{ code: "13101", name: "Phường Phú Hội" }] },
+      { code: "132", name: "Quận Thuận Hóa", wards: [{ code: "13201", name: "Phường Thuận Thành" }] }
+    ]
+  },
+  {
+    code: "14",
+    name: "Hưng Yên",
+    districts: [
+      { code: "141", name: "TP. Hưng Yên", wards: [{ code: "14101", name: "Phường Lam Sơn" }] },
+      { code: "142", name: "Thị xã Mỹ Hào", wards: [{ code: "14201", name: "Phường Bần Yên Nhân" }] }
+    ]
+  },
+  {
+    code: "15",
+    name: "Khánh Hòa",
+    districts: [
+      { code: "151", name: "TP. Nha Trang", wards: [{ code: "15101", name: "Phường Lộc Thọ" }] },
+      { code: "152", name: "TP. Cam Ranh", wards: [{ code: "15201", name: "Phường Cam Nghĩa" }] }
+    ]
+  },
+  {
+    code: "16",
+    name: "Lai Châu",
+    districts: [
+      { code: "161", name: "TP. Lai Châu", wards: [{ code: "16101", name: "Phường Quyết Thắng" }] },
+      { code: "162", name: "Huyện Tam Đường", wards: [{ code: "16201", name: "Thị trấn Tam Đường" }] }
+    ]
+  },
+  {
+    code: "17",
+    name: "Lạng Sơn",
+    districts: [
+      { code: "171", name: "TP. Lạng Sơn", wards: [{ code: "17101", name: "Phường Hoàng Văn Thụ" }] },
+      { code: "172", name: "Huyện Tràng Định", wards: [{ code: "17201", name: "Thị trấn Thất Khê" }] }
+    ]
+  },
+  {
+    code: "18",
+    name: "Lào Cai",
+    districts: [
+      { code: "181", name: "TP. Lào Cai", wards: [{ code: "18101", name: "Phường Duyên Hải" }] },
+      { code: "182", name: "Thị xã Sa Pa", wards: [{ code: "18201", name: "Phường Sa Pa" }] }
+    ]
+  },
+  {
+    code: "19",
+    name: "Lâm Đồng",
+    districts: [
+      { code: "191", name: "TP. Đà Lạt", wards: [{ code: "19101", name: "Phường 1" }] },
+      { code: "192", name: "TP. Bảo Lộc", wards: [{ code: "19201", name: "Phường 1" }] }
+    ]
+  },
+  {
+    code: "20",
+    name: "Nghệ An",
+    districts: [
+      { code: "201", name: "TP. Vinh", wards: [{ code: "20101", name: "Phường Đội Cung" }] },
+      { code: "202", name: "Thị xã Cửa Lò", wards: [{ code: "20201", name: "Phường Nghi Thu" }] }
+    ]
+  },
+  {
+    code: "21",
+    name: "Ninh Bình",
+    districts: [
+      { code: "211", name: "TP. Ninh Bình", wards: [{ code: "21101", name: "Phường Đông Thành" }] },
+      { code: "212", name: "TP. Tam Điệp", wards: [{ code: "21201", name: "Phường Bắc Sơn" }] }
+    ]
+  },
+  {
+    code: "22",
+    name: "Phú Thọ",
+    districts: [
+      { code: "221", name: "TP. Việt Trì", wards: [{ code: "22101", name: "Phường Dữu Lâu" }] },
+      { code: "222", name: "Thị xã Phú Thọ", wards: [{ code: "22201", name: "Phường Âu Cơ" }] }
+    ]
+  },
+  {
+    code: "23",
+    name: "Quảng Ngãi",
+    districts: [
+      { code: "231", name: "TP. Quảng Ngãi", wards: [{ code: "23101", name: "Phường Lê Hồng Phong" }] },
+      { code: "232", name: "Thị xã Đức Phổ", wards: [{ code: "23201", name: "Phường Nguyễn Nghiêm" }] }
+    ]
+  },
+  {
+    code: "24",
+    name: "Quảng Ninh",
+    districts: [
+      { code: "241", name: "TP. Hạ Long", wards: [{ code: "24101", name: "Phường Hồng Hải" }] },
+      { code: "242", name: "TP. Móng Cái", wards: [{ code: "24201", name: "Phường Ka Long" }] }
+    ]
+  },
+  {
+    code: "25",
+    name: "Quảng Trị",
+    districts: [
+      { code: "251", name: "TP. Đông Hà", wards: [{ code: "25101", name: "Phường Đông Giang" }] },
+      { code: "252", name: "Thị xã Quảng Trị", wards: [{ code: "25201", name: "Phường 1" }] }
+    ]
+  },
+  {
+    code: "26",
+    name: "Sơn La",
+    districts: [
+      { code: "261", name: "TP. Sơn La", wards: [{ code: "26101", name: "Phường Chiềng Lề" }] },
+      { code: "262", name: "Huyện Quỳnh Nhai", wards: [{ code: "26201", name: "Xã Mường Giàng" }] }
+    ]
+  },
+  {
+    code: "27",
+    name: "Tây Ninh",
+    districts: [
+      { code: "271", name: "TP. Tây Ninh", wards: [{ code: "27101", name: "Phường 1" }] },
+      { code: "272", name: "Thị xã Hòa Thành", wards: [{ code: "27201", name: "Phường Long Hoa" }] }
+    ]
+  },
+  {
+    code: "28",
+    name: "Thái Nguyên",
+    districts: [
+      { code: "281", name: "TP. Thái Nguyên", wards: [{ code: "28101", name: "Phường Quán Triều" }] },
+      { code: "282", name: "TP. Sông Công", wards: [{ code: "28201", name: "Phường Lương Sơn" }] }
+    ]
+  },
+  {
+    code: "29",
+    name: "Thanh Hóa",
+    districts: [
+      { code: "291", name: "TP. Thanh Hóa", wards: [{ code: "29101", name: "Phường Hàm Rồng" }] },
+      { code: "292", name: "TP. Sầm Sơn", wards: [{ code: "29201", name: "Phường Trung Sơn" }] }
+    ]
+  },
+  {
+    code: "30",
+    name: "Tuyên Quang",
+    districts: [
+      { code: "301", name: "TP. Tuyên Quang", wards: [{ code: "30101", name: "Phường Phan Thiết" }] },
+      { code: "302", name: "Huyện Lâm Bình", wards: [{ code: "30201", name: "Thị trấn Lăng Can" }] }
+    ]
+  },
+  {
+    code: "32",
+    name: "Vĩnh Long",
+    districts: [
+      { code: "321", name: "TP. Vĩnh Long", wards: [{ code: "32101", name: "Phường 1" }] },
+      { code: "322", name: "Thị xã Bình Minh", wards: [{ code: "32201", name: "Phường Cái Vồn" }] }
     ]
   }
 ];

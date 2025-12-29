@@ -7,9 +7,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = (page - 1) * limit;
+    const pageParam = parseInt(searchParams.get('page') || '1', 10);
+    const limitParam = parseInt(searchParams.get('limit') || '10', 10);
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
+    const limit = Math.min(50, limitRaw);
+    const offset = Math.max(0, (page - 1) * limit);
 
     const pool = await getConnection();
     const conn = await pool.getConnection();
@@ -36,10 +39,17 @@ export async function GET(request: NextRequest) {
     );
     const total = (countResult as any)[0].total;
 
-    // Lấy sản phẩm với phân trang
+    // Lấy sản phẩm với phân trang và đánh giá
     const [products] = await conn.execute(
-      `SELECT * FROM products ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+      `SELECT 
+        p.*,
+        COALESCE(p.average_rating, 0) as average_rating,
+        COALESCE(p.total_reviews, 0) as total_reviews
+      FROM products p 
+      ${whereClause} 
+      ORDER BY p.created_at DESC 
+      LIMIT ${limit} OFFSET ${offset}`,
+      params
     );
 
     return NextResponse.json({

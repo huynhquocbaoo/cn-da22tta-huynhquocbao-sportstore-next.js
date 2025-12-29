@@ -44,7 +44,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     // Chỉ redirect nếu user đã được load và không có user
-    if (user === null) {
+    if (user === null && typeof window !== 'undefined') {
       router.push('/');
       return;
     }
@@ -145,7 +145,7 @@ export default function CheckoutPage() {
 
       const orderData = {
         items: cartItems.map(item => ({
-          product_id: item.id,
+          product_id: item.product_id || item.id, // Sử dụng product_id nếu có, fallback về id
           quantity: item.quantity,
           price: item.price
         })),
@@ -164,6 +164,13 @@ export default function CheckoutPage() {
       };
 
       console.log('Checkout - Order data:', orderData);
+      console.log('Checkout - Cart items:', cartItems);
+      console.log('Checkout - Items mapping:', cartItems.map(item => ({
+        cartId: item.id,
+        productId: item.product_id || item.id,
+        quantity: item.quantity,
+        price: item.price
+      })));
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -209,7 +216,7 @@ export default function CheckoutPage() {
   }
 
   // Redirect to cart if not logged in
-  if (!user) {
+  if (!user && typeof window !== 'undefined') {
     router.push('/cart');
     return null;
   }

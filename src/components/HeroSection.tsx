@@ -1,10 +1,22 @@
 import Link from 'next/link';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <section className="relative text-white overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('/background.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/50 z-0" />
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-8">
@@ -13,7 +25,7 @@ export default function HeroSection() {
                 Dụng cụ thể thao
                 <span className="block text-yellow-400">chất lượng cao</span>
               </h1>
-              <p className="text-xl text-blue-100 max-w-lg">
+              <p className="text-xl text-gray-200 max-w-lg">
                 Khám phá bộ sưu tập dụng cụ thể thao đa dạng với chất lượng vượt trội, 
                 giá cả cạnh tranh và dịch vụ tận tình.
               </p>
@@ -27,25 +39,21 @@ export default function HeroSection() {
                 Mua sắm ngay
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-              <button className="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold rounded-lg transition-colors">
-                <Play className="mr-2 h-5 w-5" />
-                Xem video
-              </button>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 pt-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-yellow-400">1000+</div>
-                <div className="text-blue-100">Sản phẩm</div>
+                <div className="text-gray-300">Sản phẩm</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-yellow-400">50K+</div>
-                <div className="text-blue-100">Khách hàng</div>
+                <div className="text-gray-300">Khách hàng</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-yellow-400">99%</div>
-                <div className="text-blue-100">Hài lòng</div>
+                <div className="text-gray-300">Hài lòng</div>
               </div>
             </div>
           </div>
@@ -60,28 +68,28 @@ export default function HeroSection() {
                       <span className="text-2xl">⚽</span>
                     </div>
                     <h3 className="font-semibold">Bóng đá</h3>
-                    <p className="text-sm text-blue-100">200+ sản phẩm</p>
+                    <p className="text-sm text-gray-300">200+ sản phẩm</p>
                   </div>
                   <div className="bg-white/20 rounded-lg p-4 text-center">
                     <div className="w-16 h-16 bg-white/30 rounded-full mx-auto mb-3 flex items-center justify-center">
                       <span className="text-2xl">🏀</span>
                     </div>
                     <h3 className="font-semibold">Bóng rổ</h3>
-                    <p className="text-sm text-blue-100">150+ sản phẩm</p>
+                    <p className="text-sm text-gray-300">150+ sản phẩm</p>
                   </div>
                   <div className="bg-white/20 rounded-lg p-4 text-center">
                     <div className="w-16 h-16 bg-white/30 rounded-full mx-auto mb-3 flex items-center justify-center">
                       <span className="text-2xl">🎾</span>
                     </div>
                     <h3 className="font-semibold">Tennis</h3>
-                    <p className="text-sm text-blue-100">100+ sản phẩm</p>
+                    <p className="text-sm text-gray-300">100+ sản phẩm</p>
                   </div>
                   <div className="bg-white/20 rounded-lg p-4 text-center">
                     <div className="w-16 h-16 bg-white/30 rounded-full mx-auto mb-3 flex items-center justify-center">
                       <span className="text-2xl">💪</span>
                     </div>
                     <h3 className="font-semibold">Gym</h3>
-                    <p className="text-sm text-blue-100">300+ sản phẩm</p>
+                    <p className="text-sm text-gray-300">300+ sản phẩm</p>
                   </div>
                 </div>
               </div>

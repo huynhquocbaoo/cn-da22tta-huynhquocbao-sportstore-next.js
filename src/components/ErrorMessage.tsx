@@ -5,12 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, Shield, XCircle, X } from 'lucide-react';
 
 export default function ErrorMessage() {
-  const searchParams = useSearchParams();
   const [show, setShow] = useState(false);
   const [message, setMessage] = useState('');
   const [type, setType] = useState<'error' | 'warning' | 'info'>('error');
 
   useEffect(() => {
+    // Check if we're in browser environment
+    if (typeof window === 'undefined') return;
+    
+    const searchParams = new URLSearchParams(window.location.search);
     const error = searchParams.get('error');
     const logout = searchParams.get('logout');
 
@@ -31,7 +34,7 @@ export default function ErrorMessage() {
       setType('error');
       setShow(true);
     }
-  }, [searchParams]);
+  }, []);
 
   if (!show) return null;
 

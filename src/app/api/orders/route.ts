@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConnection } from '@/lib/database';
-import jwt from 'jsonwebtoken';
-import { config } from '@/lib/config';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // Đọc token từ cookie hoặc header
-    let token = request.cookies.get('token')?.value;
-    if (!token) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
+        { status: 401 }
+      );
     }
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
-    const userId = decoded.userId;
 
     const pool = await getConnection();
     const conn = await pool.getConnection();
@@ -32,6 +23,8 @@ export async function GET(request: NextRequest) {
           o.user_id,
           o.total_amount,
           o.status,
+          o.shipping_address,
+          o.payment_method,
           o.created_at,
           o.updated_at
         FROM orders o
@@ -39,7 +32,40 @@ export async function GET(request: NextRequest) {
         ORDER BY o.created_at DESC
       `, [userId]);
 
-      return NextResponse.json({ orders });
+      // Lấy order items cho mỗi đơn hàng
+      const ordersWithItems = await Promise.all(
+        (orders as any[]).map(async (order) => {
+          const [items] = await conn.execute(`
+            SELECT 
+              oi.id,
+              oi.product_id,
+              oi.quantity,
+              oi.price,
+              p.name as product_name,
+              p.image as product_image,
+              CASE WHEN r.id IS NULL THEN 0 ELSE 1 END as hasReviewed
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN reviews r
+              ON r.order_id = oi.order_id
+              AND r.product_id = oi.product_id
+              AND r.user_id = ?
+            WHERE oi.order_id = ?
+          `, [userId, order.id]);
+
+          const formattedItems = (items as any[]).map(item => ({
+            ...item,
+            hasReviewed: Boolean(item.hasReviewed)
+          }));
+
+          return {
+            ...order,
+            items: formattedItems
+          };
+        })
+      );
+
+      return NextResponse.json({ orders: ordersWithItems });
     } finally {
       conn.release();
     }
@@ -62,21 +88,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Đọc token từ cookie hoặc header
-    let token = request.cookies.get('token')?.value;
-    if (!token) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Chưa đăng nhập hoặc token không hợp lệ' },
+        { status: 401 }
+      );
     }
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
-    const userId = decoded.userId;
 
     const { items, shippingAddress, paymentMethod, notes } = await request.json();
     
@@ -86,7 +104,6 @@ export async function POST(request: NextRequest) {
 
     const pool = await getConnection();
     
-    // Sử dụng pool.query thay vì transaction cho đơn giản
     try {
       // Tính tổng tiền
       let totalAmount = 0;
@@ -102,8 +119,26 @@ export async function POST(request: NextRequest) {
 
       const orderId = (result as any).insertId;
 
-      // Tạo order items
+      // Tạo order items với validation
       for (const item of items) {
+        console.log('Creating order item:', {
+          orderId,
+          productId: item.product_id,
+          quantity: item.quantity,
+          price: item.price
+        });
+
+        // Kiểm tra sản phẩm có tồn tại không
+        const [productCheck] = await pool.execute(
+          'SELECT id FROM products WHERE id = ?',
+          [item.product_id]
+        );
+
+        if (!productCheck || (productCheck as any[]).length === 0) {
+          console.error(`Product ID ${item.product_id} not found`);
+          throw new Error(`Sản phẩm với ID ${item.product_id} không tồn tại`);
+        }
+
         await pool.execute(`
           INSERT INTO order_items (order_id, product_id, quantity, price)
           VALUES (?, ?, ?, ?)
@@ -114,11 +149,10 @@ export async function POST(request: NextRequest) {
         message: 'Đặt hàng thành công', 
         orderId: orderId 
       });
-
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating order:', error);
       throw error;
     }
-
   } catch (error: any) {
     console.error('Error creating order:', error);
     

@@ -30,34 +30,67 @@ Một trang web thương mại điện tử hiện đại được xây dựng b
 
 ## 🛠️ Công nghệ sử dụng
 
-- **Next.js 14** - React framework với App Router
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first CSS framework
+### Frontend
+- **Next.js 16** - React framework với App Router
+- **React 19** - UI library
+- **TypeScript 5** - Type safety
+- **Tailwind CSS 4** - Utility-first CSS framework
 - **Lucide React** - Icon library
 - **Headless UI** - Accessible UI components
 
+### Backend
+- **Next.js API Routes** - Server-side API
+- **MySQL 8.0** - Relational database
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+
+### Database
+- **MySQL** - Relational database (XAMPP)
+
 ## 📦 Cài đặt
 
-1. **Clone repository:**
+### Yêu cầu hệ thống
+
+- **Node.js** 18+ và npm
+- **XAMPP** với MySQL đã được cài đặt và chạy
+- **MySQL** service đang chạy trên port 3306
+
+### Các bước cài đặt
+
+1. **Cài đặt XAMPP và khởi động MySQL:**
+   - Tải XAMPP từ: https://www.apachefriends.org/
+   - Cài đặt và khởi động MySQL service trong XAMPP Control Panel
+
+2. **Clone repository:**
 ```bash
 git clone <repository-url>
 cd sports-store
 ```
 
-2. **Cài đặt dependencies:**
+3. **Cài đặt dependencies:**
 ```bash
 npm install
 ```
 
-3. **Chạy development server:**
+4. **Khởi tạo database:**
+```bash
+npm run init-db
+```
+
+5. **Chạy development server:**
 ```bash
 npm run dev
 ```
 
-4. **Mở trình duyệt:**
+6. **Mở trình duyệt:**
 ```
 http://localhost:3000
 ```
+
+### Thông tin đăng nhập mặc định
+
+- **Email:** admin@sportsstore.com
+- **Password:** admin123
 
 ## 🏗️ Cấu trúc dự án
 
@@ -112,11 +145,24 @@ src/
 ## 🚀 Scripts có sẵn
 
 ```bash
+# Development
 npm run dev          # Development server
+npm run dev:silent   # Development server (không mở browser)
+
+# Production
 npm run build        # Production build
 npm run start        # Start production server
+
+# Database
+npm run init-db      # Khởi tạo database
+npm run test-db      # Test database connection
+npm run fix-db       # Sửa lỗi database
+npm run add-admin    # Thêm quyền admin cho user
+npm run fix-admin    # Sửa quyền admin
+npm run create-orders # Tạo bảng orders
+
+# Code Quality
 npm run lint         # Run ESLint
-npm run type-check   # TypeScript type checking
 ```
 
 ## 📄 Trang chính
@@ -156,7 +202,40 @@ Tạo thư mục mới trong `src/app/` với file `page.tsx`
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Cấu hình Database
+
+Ứng dụng sử dụng MySQL với XAMPP. Đảm bảo:
+
+1. **XAMPP đã được cài đặt và MySQL đang chạy**
+2. **Database `sports_store` đã được tạo:**
+   ```bash
+   npm run init-db
+   ```
+3. **Cấu hình database trong `src/lib/config.ts`:**
+   ```typescript
+   DATABASE: {
+     host: 'localhost',
+     user: 'root',
+     password: '',  // Mật khẩu MySQL của bạn (mặc định XAMPP là rỗng)
+     database: 'sports_store',
+     port: 3306,
+   }
+   ```
+
+### Email quên mật khẩu
+
+- Cấu hình SMTP trong `.env` (xem `env.example`) với các biến `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`.
+- Nếu chưa cấu hình SMTP, mã đặt lại mật khẩu sẽ chỉ được log trong server (hữu ích cho dev, không nên dùng cho production).
+
+### 📚 Hướng dẫn chi tiết
+
+Xem tất cả hướng dẫn trong folder **[docs](./docs/)**:
+
+- **[HƯỚNG_DẪN_CÀI_ĐẶT.md](./docs/HƯỚNG_DẪN_CÀI_ĐẶT.md)** - 📖 Hướng dẫn cài đặt với XAMPP
+- **[SETUP.md](./docs/SETUP.md)** - ⚙️ Hướng dẫn setup
+- **[CAC_BUOC_CHAY.md](./docs/CAC_BUOC_CHAY.md)** - 📝 Các bước chạy ứng dụng
+
+### Vercel
 ```bash
 npm install -g vercel
 vercel
@@ -168,17 +247,20 @@ npm run build
 # Upload dist folder to Netlify
 ```
 
-### Docker
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+### Docker Compose
+1. Sao chép file cấu hình mẫu:
+   ```bash
+   cp env.example .env
+   ```
+2. Cập nhật `JWT_SECRET`, `DB_PASSWORD` (và các biến khác nếu cần).
+3. Chạy toàn bộ stack:
+   ```bash
+   docker compose up --build
+   ```
+4. Mở `http://localhost:3000`.
+5. Nếu trên máy đã có MySQL (XAMPP, WAMP,…), docker-compose mặc định map cổng host `3307 -> 3306` để tránh xung đột. Sửa lại trong `docker-compose.yml` nếu bạn cần cổng khác.
+
+👉 Xem hướng dẫn chi tiết trong [`docs/DOCKER.md`](./docs/DOCKER.md).
 
 ## 🤝 Đóng góp
 

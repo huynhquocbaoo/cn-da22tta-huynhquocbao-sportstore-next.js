@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 // POST - Thêm sản phẩm mới
 export async function POST(request: NextRequest) {
   try {
-    const { name, description, price, image, category, stock } = await request.json();
+    const { name, description, price, image, images, category, product_type, sport_type, stock } = await request.json();
 
     if (!name || !price || !category) {
       return NextResponse.json(
@@ -38,33 +38,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Tạo slug từ tên sản phẩm
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .trim();
-
     const pool = await getConnection();
     const conn = await pool.getConnection();
     
     try {
-      // Kiểm tra xem slug đã tồn tại chưa
-      const [existingProducts] = await conn.execute(
-        'SELECT id FROM products WHERE slug = ?',
-        [slug]
+      // Thêm sản phẩm mới với cột images, product_type, sport_type
+      const [result] = await conn.execute(
+        'INSERT INTO products (name, description, price, image, images, category, product_type, sport_type, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, description || '', price, image || '', images || '[]', category, product_type || '', sport_type || '', stock || 0]
       );
-
-    let finalSlug = slug;
-    if ((existingProducts as any).length > 0) {
-      finalSlug = `${slug}-${Date.now()}`;
-    }
-
-    // Thêm sản phẩm mới
-    const [result] = await conn.execute(
-      'INSERT INTO products (name, description, price, image, category, stock, slug) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, description || '', price, image || '', category, stock || 0, finalSlug]
-    );
 
     return NextResponse.json(
       { 

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Package, Clock, CheckCircle, Truck, XCircle, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import ReviewModal from '@/components/ReviewModal';
 
 interface Order {
   id: number;
@@ -21,6 +23,7 @@ interface OrderItem {
   price: number;
   product_name: string;
   product_image: string;
+  hasReviewed?: boolean;
 }
 
 export default function OrdersPage() {
@@ -28,6 +31,17 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [reviewModal, setReviewModal] = useState<{
+    isOpen: boolean;
+    productId: number;
+    productName: string;
+    orderId: number;
+  }>({
+    isOpen: false,
+    productId: 0,
+    productName: '',
+    orderId: 0
+  });
 
   useEffect(() => {
     if (user) {
@@ -85,6 +99,20 @@ export default function OrdersPage() {
     }
   };
 
+  const handleReviewProduct = (productId: number, productName: string, orderId: number) => {
+    setReviewModal({
+      isOpen: true,
+      productId,
+      productName,
+      orderId
+    });
+  };
+
+  const handleReviewSubmitted = () => {
+    // Refresh orders to show updated review status
+    fetchOrders();
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="h-5 w-5" />;
@@ -125,7 +153,21 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url('/background.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      />
+      {/* Light overlay for readability */}
+      <div className="fixed inset-0 bg-white/85 z-0" />
+      
+      <div className="relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -264,11 +306,64 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Order Items for Delivered Orders */}
+                  {order.status === 'delivered' && order.items && order.items.length > 0 && (
+                    <div className="px-6 py-4 border-t">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">Sản phẩm đã mua</h4>
+                      <div className="space-y-3">
+                        {order.items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <Link
+                              href={`/products/${item.product_id}`}
+                              className="flex items-center space-x-3 group"
+                            >
+                              <img
+                                src={item.product_image || '/api/placeholder/60/60'}
+                                alt={item.product_name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{item.product_name}</p>
+                                <p className="text-xs text-gray-500">Số lượng: {item.quantity}</p>
+                                <p className="text-sm text-gray-600">{formatPrice(item.price)}</p>
+                              </div>
+                            </Link>
+                            {item.hasReviewed ? (
+                              <span className="flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-xs font-medium">Đã đánh giá</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleReviewProduct(item.product_id, item.product_name, order.id)}
+                                className="flex items-center space-x-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full hover:bg-yellow-200 transition-colors"
+                              >
+                                <Star className="h-4 w-4" />
+                                <span className="text-xs font-medium">Đánh giá</span>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Review Modal */}
+        <ReviewModal
+          isOpen={reviewModal.isOpen}
+          onClose={() => setReviewModal({ isOpen: false, productId: 0, productName: '', orderId: 0 })}
+          productId={reviewModal.productId}
+          productName={reviewModal.productName}
+          orderId={reviewModal.orderId}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
+      </div>
       </div>
     </div>
   );

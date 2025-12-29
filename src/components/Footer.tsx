@@ -102,19 +102,19 @@ export default function Footer() {
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-blue-400" />
                 <span className="text-gray-300 text-sm">
-                  123 Đường ABC, Quận 1, TP.HCM
+                  Trường Đại Học Trà Vinh
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-blue-400" />
                 <span className="text-gray-300 text-sm">
-                  (028) 1234-5678
+                  (084) 848-890-295
                 </span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-blue-400" />
                 <span className="text-gray-300 text-sm">
-                  info@sportstore.vn
+                  q.bao2k4@gmail.com
                 </span>
               </div>
             </div>

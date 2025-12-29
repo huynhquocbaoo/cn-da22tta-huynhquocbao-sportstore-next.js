@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Star, ShoppingCart, Heart, Eye } from 'lucide-react';
+import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 interface Product {
   id: number;
@@ -13,13 +14,15 @@ interface Product {
   description: string;
   category: string;
   stock: number;
+  average_rating?: number;
+  total_reviews?: number;
 }
 
 export default function FeaturedProducts() {
-  const [likedProducts, setLikedProducts] = useState<number[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
 
   useEffect(() => {
     fetchProducts();
@@ -44,12 +47,12 @@ export default function FeaturedProducts() {
     }
   };
 
-  const toggleLike = (productId: number) => {
-    setLikedProducts(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+  const toggleLike = async (productId: number) => {
+    if (isInWishlist(productId)) {
+      await removeFromWishlist(productId);
+    } else {
+      await addToWishlist(productId);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -85,24 +88,28 @@ export default function FeaturedProducts() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
+          {products.map((product) => {
+            const detailHref = `/products/${product.id}`;
+            return (
             <div
               key={product.id}
-              className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 h-full flex flex-col overflow-hidden"
             >
               {/* Product Image */}
-              <div className="relative overflow-hidden rounded-t-2xl">
-                <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                  {product.image ? (
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-6xl text-gray-400">🏃</span>
-                  )}
-                </div>
+              <div className="relative overflow-hidden rounded-t-3xl">
+                <Link href={detailHref} className="block">
+                  <div className="aspect-square bg-gray-200 flex items-center justify-center">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-6xl text-gray-400">🏃</span>
+                    )}
+                  </div>
+                </Link>
                 
                 {/* Stock Badge */}
                 <div className="absolute top-4 left-4">
@@ -121,38 +128,42 @@ export default function FeaturedProducts() {
                   <button
                     onClick={() => toggleLike(product.id)}
                     className={`p-2 rounded-full shadow-lg transition-colors ${
-                      likedProducts.includes(product.id)
+                      isInWishlist(product.id)
                         ? 'bg-red-500 text-white'
                         : 'bg-white text-gray-600 hover:bg-red-500 hover:text-white'
                     }`}
-                    title={likedProducts.includes(product.id) ? 'Bỏ yêu thích' : 'Yêu thích'}
+                    title={isInWishlist(product.id) ? 'Bỏ yêu thích' : 'Yêu thích'}
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                   </button>
-                  <button 
-                    className="p-2 bg-white text-gray-600 rounded-full shadow-lg hover:bg-blue-500 hover:text-white transition-colors"
+                  <Link 
+                    href={detailHref}
+                    className="p-2 bg-white text-gray-600 rounded-full shadow-lg hover:bg-blue-500 hover:text-white transition-colors text-center"
                     title="Xem chi tiết"
                   >
-                    <Eye className="h-4 w-4" />
-                  </button>
+                    <Eye className="h-4 w-4 inline" />
+                  </Link>
                 </div>
               </div>
 
                 {/* Product Info */}
-                <div className="p-6">
+                <div className="p-6 flex flex-col flex-grow">
                   <div className="mb-2">
                     <span className="text-sm text-blue-600 font-medium capitalize">
                       {product.category}
                     </span>
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                  <Link href={detailHref} className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors block h-14">
                     {product.name}
-                  </h3>
+                  </Link>
 
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2 h-10">
                     {product.description}
                   </p>
+
+                  {/* Spacer to push price and button to bottom */}
+                  <div className="flex-grow"></div>
 
                   {/* Price */}
                   <div className="flex items-center justify-between mb-4">
@@ -167,14 +178,14 @@ export default function FeaturedProducts() {
                   <button 
                     onClick={() => handleAddToCart(product.id)}
                     disabled={product.stock === 0}
-                    className="w-full flex items-center justify-center space-x-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                    className="w-full flex items-center justify-center space-x-2 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-xl transition-colors"
                   >
                     <ShoppingCart className="h-5 w-5" />
                     <span>{product.stock > 0 ? 'Thêm vào giỏ' : 'Hết hàng'}</span>
                   </button>
                 </div>
             </div>
-          ))}
+          )})}
         </div>
 
         <div className="text-center mt-12">
