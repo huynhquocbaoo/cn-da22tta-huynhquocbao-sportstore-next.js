@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     try {
       const [cartItems] = await conn.execute(`
-        SELECT c.id, c.quantity, p.id as product_id, p.name, p.price, p.image, p.description
+        SELECT c.id, c.quantity, c.size, p.id as product_id, p.name, p.price, p.image, p.description
         FROM cart c
         JOIN products p ON c.product_id = p.id
         WHERE c.user_id = ?
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { productId, quantity = 1 } = await request.json();
+    const { productId, quantity = 1, size } = await request.json();
 
     if (!productId) {
       return NextResponse.json(
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       // Kiểm tra xem sản phẩm có tồn tại không
       console.log('Looking for product ID:', productId);
       const [products] = await conn.execute(
-        'SELECT id, stock FROM products WHERE id = ?',
+        'SELECT id, stock, sizes, category FROM products WHERE id = ?',
         [productId]
       );
 
@@ -94,11 +94,43 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Kiểm tra xem sản phẩm đã có trong giỏ hàng chưa
-      const [existingItems] = await conn.execute(
-        'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?',
-        [userId, productId]
-      );
+      // Kiểm tra nếu sản phẩm yêu cầu size
+      const requiresSize = ['ao', 'quan', 'giay'].includes(product.category);
+      if (requiresSize && product.sizes) {
+        let availableSizes: string[] = [];
+        try {
+          availableSizes = JSON.parse(product.sizes);
+        } catch {
+          availableSizes = [];
+        }
+        
+        if (availableSizes.length > 0 && !size) {
+          return NextResponse.json(
+            { error: 'Vui lòng chọn size cho sản phẩm này' },
+            { status: 400 }
+          );
+        }
+        
+        if (size && availableSizes.length > 0 && !availableSizes.includes(size)) {
+          return NextResponse.json(
+            { error: `Size ${size} không có sẵn cho sản phẩm này` },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Kiểm tra xem sản phẩm (với size cụ thể) đã có trong giỏ hàng chưa
+      let existingItemsQuery = 'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?';
+      let existingItemsParams: (string | number | null)[] = [userId, productId];
+      
+      if (size) {
+        existingItemsQuery += ' AND size = ?';
+        existingItemsParams.push(size);
+      } else {
+        existingItemsQuery += ' AND (size IS NULL OR size = "")';
+      }
+      
+      const [existingItems] = await conn.execute(existingItemsQuery, existingItemsParams);
 
       if ((existingItems as any).length > 0) {
         // Cập nhật số lượng
@@ -111,14 +143,14 @@ export async function POST(request: NextRequest) {
         }
         
         await conn.execute(
-          'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
-          [newQuantity, userId, productId]
+          'UPDATE cart SET quantity = ? WHERE id = ?',
+          [newQuantity, (existingItems as any)[0].id]
         );
       } else {
         // Thêm mới vào giỏ hàng
         await conn.execute(
-          'INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)',
-          [userId, productId, quantity]
+          'INSERT INTO cart (user_id, product_id, quantity, size) VALUES (?, ?, ?, ?)',
+          [userId, productId, quantity, size || null]
         );
       }
 
@@ -154,7 +186,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { productId, quantity } = await request.json();
+    const { productId, quantity, size } = await request.json();
 
     if (!productId || quantity < 0) {
       return NextResponse.json(
@@ -167,11 +199,22 @@ export async function PUT(request: NextRequest) {
     const conn = await pool.getConnection();
     
     try {
+      // Tạo điều kiện WHERE bao gồm cả size
+      let whereClause = 'user_id = ? AND product_id = ?';
+      let whereParams: (string | number | null)[] = [userId, productId];
+      
+      if (size) {
+        whereClause += ' AND size = ?';
+        whereParams.push(size);
+      } else {
+        whereClause += ' AND (size IS NULL OR size = "")';
+      }
+
       if (quantity === 0) {
         // Xóa sản phẩm khỏi giỏ hàng
         await conn.execute(
-          'DELETE FROM cart WHERE user_id = ? AND product_id = ?',
-          [userId, productId]
+          `DELETE FROM cart WHERE ${whereClause}`,
+          whereParams
         );
       } else {
         // Kiểm tra stock
@@ -196,8 +239,8 @@ export async function PUT(request: NextRequest) {
 
         // Cập nhật số lượng
         await conn.execute(
-          'UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?',
-          [quantity, userId, productId]
+          `UPDATE cart SET quantity = ? WHERE ${whereClause}`,
+          [quantity, ...whereParams]
         );
       }
 
@@ -235,6 +278,7 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
+    const size = searchParams.get('size');
 
     if (!productId) {
       return NextResponse.json(
@@ -247,9 +291,20 @@ export async function DELETE(request: NextRequest) {
     const conn = await pool.getConnection();
     
     try {
+      // Tạo điều kiện WHERE bao gồm cả size
+      let whereClause = 'user_id = ? AND product_id = ?';
+      let whereParams: (string | number | null)[] = [userId, productId];
+      
+      if (size) {
+        whereClause += ' AND size = ?';
+        whereParams.push(size);
+      } else {
+        whereClause += ' AND (size IS NULL OR size = "")';
+      }
+
       await conn.execute(
-        'DELETE FROM cart WHERE user_id = ? AND product_id = ?',
-        [userId, productId]
+        `DELETE FROM cart WHERE ${whereClause}`,
+        whereParams
       );
 
       return NextResponse.json({ message: 'Đã xóa khỏi giỏ hàng' });

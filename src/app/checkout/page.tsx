@@ -1,12 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Truck, Shield, CheckCircle, AlertCircle, ShoppingCart } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, CreditCard, Truck, Shield, CheckCircle, AlertCircle, ShoppingCart, Copy, Check } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getProvinces, getDistrictsByProvince, getWardsByDistrict, Province, District, Ward } from '@/data/vietnam-addresses';
+
+// Generate random order code
+const generateOrderCode = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'DH';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
@@ -36,6 +47,10 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [error, setError] = useState('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // Generate order code once and keep it stable
+  const orderCode = useMemo(() => generateOrderCode(), []);
   
   // Address states
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -120,6 +135,25 @@ export default function CheckoutPage() {
     }).format(price);
   };
 
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Bank transfer info
+  const bankInfo = {
+    bankName: 'Vietcombank',
+    accountNumber: '9848890295',
+    accountName: 'HUYNH QUOC BAO',
+    branch: 'CN Sóc Trăng'
+  };
+
   const subtotal = cartItems && Array.isArray(cartItems) && cartItems.length > 0 ? cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0;
   const shipping = 0; // Free shipping
   const total = subtotal + shipping;
@@ -147,7 +181,8 @@ export default function CheckoutPage() {
         items: cartItems.map(item => ({
           product_id: item.product_id || item.id, // Sử dụng product_id nếu có, fallback về id
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          size: item.size || null
         })),
         shippingAddress: {
           firstName: formData.firstName,
@@ -160,7 +195,8 @@ export default function CheckoutPage() {
           ward: formData.ward,
         },
         paymentMethod: formData.paymentMethod,
-        notes: formData.notes
+        notes: formData.notes,
+        orderCode: formData.paymentMethod === 'bank_transfer' ? orderCode : undefined
       };
 
       console.log('Checkout - Order data:', orderData);
@@ -448,7 +484,7 @@ export default function CheckoutPage() {
                       <span className="font-medium">Thanh toán khi nhận hàng (COD)</span>
                     </div>
                   </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <label className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-all ${formData.paymentMethod === 'bank_transfer' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -462,6 +498,117 @@ export default function CheckoutPage() {
                       <span className="font-medium">Chuyển khoản ngân hàng</span>
                     </div>
                   </label>
+                  
+                  {/* Bank Transfer Info */}
+                  {formData.paymentMethod === 'bank_transfer' && (
+                    <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Thông tin chuyển khoản</h3>
+                      
+                      {/* QR Code */}
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-white p-3 rounded-xl shadow-md">
+                          <img
+                            src="/images/image.png"
+                            alt="QR Code Vietcombank"
+                            className="w-48 h-48 object-contain"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Bank Details */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="text-xs text-gray-500">Ngân hàng</p>
+                            <p className="font-semibold text-gray-900">{bankInfo.bankName}</p>
+                          </div>
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">VCB</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="text-xs text-gray-500">Số tài khoản</p>
+                            <p className="font-semibold text-gray-900 font-mono">{bankInfo.accountNumber}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(bankInfo.accountNumber, 'accountNumber')}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Sao chép"
+                          >
+                            {copiedField === 'accountNumber' ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="text-xs text-gray-500">Chủ tài khoản</p>
+                            <p className="font-semibold text-gray-900">{bankInfo.accountName}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(bankInfo.accountName, 'accountName')}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Sao chép"
+                          >
+                            {copiedField === 'accountName' ? <Check className="h-5 w-5 text-green-600" /> : <Copy className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                          <div>
+                            <p className="text-xs text-gray-500">Chi nhánh</p>
+                            <p className="font-semibold text-gray-900">{bankInfo.branch}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Transfer Content - Order Code */}
+                        <div className="p-4 bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400 rounded-xl">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-xs text-yellow-800 font-medium mb-1">⚠️ NỘI DUNG CHUYỂN KHOẢN (Bắt buộc)</p>
+                              <p className="text-xl font-bold text-yellow-900 font-mono tracking-wider">{orderCode}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(orderCode, 'orderCode')}
+                              className="p-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors shadow-md"
+                              title="Sao chép mã đơn hàng"
+                            >
+                              {copiedField === 'orderCode' ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-yellow-700 mt-2">
+                            Vui lòng điền đúng mã này khi chuyển khoản để chúng tôi xác nhận đơn hàng của bạn.
+                          </p>
+                        </div>
+                        
+                        {/* Amount */}
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-green-700">Số tiền cần chuyển</p>
+                              <p className="text-xl font-bold text-green-800">{formatPrice(total)}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(total.toString(), 'amount')}
+                              className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                              title="Sao chép số tiền"
+                            >
+                              {copiedField === 'amount' ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 text-center mt-4">
+                        Sau khi chuyển khoản, vui lòng bấm &quot;Đặt hàng&quot; để hoàn tất.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -501,7 +648,7 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 {cartItems && Array.isArray(cartItems) && cartItems.length > 0 ? (
                   cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3">
+                    <div key={`${item.id}-${item.size || 'no-size'}`} className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0">
                         <img
                           src={item.image || '/api/placeholder/48/48'}
@@ -513,7 +660,10 @@ export default function CheckoutPage() {
                         <h3 className="text-sm font-medium text-gray-900 truncate">
                           {item.name}
                         </h3>
-                        <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
+                        <p className="text-sm text-gray-500">
+                          Số lượng: {item.quantity}
+                          {item.size && <span className="ml-2">| Size: {item.size}</span>}
+                        </p>
                       </div>
                       <div className="text-sm font-medium text-gray-900">
                         {formatPrice(item.price * item.quantity)}

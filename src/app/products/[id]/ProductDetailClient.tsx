@@ -31,7 +31,7 @@ export interface ProductDetailData {
   average_rating?: number;
   total_reviews?: number;
   colors?: Array<{ name: string; value: string; image?: string }>;
-  sizes?: number[];
+  sizes?: string[];
 }
 
 export interface ProductReview {
@@ -76,6 +76,19 @@ export default function ProductDetailClient({
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  // Check if product has sizes
+  const hasSizes = product?.sizes && Array.isArray(product.sizes) && product.sizes.length > 0;
+
+  // Determine size type based on category
+  const getSizeType = (category?: string): 'clothing' | 'shoes' | 'none' => {
+    if (category === 'ao' || category === 'quan') return 'clothing';
+    if (category === 'giay') return 'shoes';
+    return 'none';
+  };
+
+  const sizeType = getSizeType(product?.category);
 
   // Build list of all images (converted to API URLs for cache busting)
   const allImages = useMemo(() => {
@@ -119,9 +132,16 @@ export default function ProductDetailClient({
 
   const handleAddToCart = async () => {
     if (!product || isAdding) return;
+    
+    // Kiểm tra nếu sản phẩm có size thì phải chọn size
+    if (hasSizes && !selectedSize) {
+      alert('Vui lòng chọn size trước khi thêm vào giỏ hàng!');
+      return;
+    }
+    
     setIsAdding(true);
     try {
-      const success = await addToCart(product.id, quantity);
+      const success = await addToCart(product.id, quantity, selectedSize || undefined);
       if (success) {
         alert('Đã thêm vào giỏ hàng!');
       } else {
@@ -306,6 +326,35 @@ export default function ProductDetailClient({
                   </span>
                 )}
               </div>
+
+              {/* Size Selection */}
+              {hasSizes && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Chọn {sizeType === 'shoes' ? 'Size Giày' : 'Size'} *
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes!.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                          selectedSize === size
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedSize && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      Đã chọn: <span className="font-semibold text-blue-600">{selectedSize}</span>
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Quantity Selector */}
               <div className="mb-6">

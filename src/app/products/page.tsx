@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent } from 'react';
-import { Grid, List, SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Grid, List, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import ProductFilters from '@/components/ProductFilters';
 import { getCategories, getCategoryName, ProductCategory } from '@/data/product-categories';
@@ -425,16 +425,6 @@ export default function ProductsPage() {
                   >
                     <SlidersHorizontal className="h-4 w-4" />
                     <span>Bộ lọc</span>
-                  </button>
-
-                  <button
-                    onClick={fetchProducts}
-                    disabled={loading}
-                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                    title="Làm mới danh sách sản phẩm"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    <span>Làm mới</span>
                   </button>
                 </div>
               </div>

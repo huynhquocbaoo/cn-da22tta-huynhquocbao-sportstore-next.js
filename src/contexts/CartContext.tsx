@@ -11,13 +11,14 @@ interface CartItem {
   price: number;
   image: string;
   description: string;
+  size?: string;
 }
 
 interface CartContextType {
   cartItems: CartItem[] | undefined;
-  addToCart: (productId: number, quantity?: number) => Promise<boolean>;
-  updateQuantity: (productId: number, quantity: number) => Promise<boolean>;
-  removeFromCart: (productId: number) => Promise<boolean>;
+  addToCart: (productId: number, quantity?: number, size?: string) => Promise<boolean>;
+  updateQuantity: (productId: number, quantity: number, size?: string) => Promise<boolean>;
+  removeFromCart: (productId: number, size?: string) => Promise<boolean>;
   getCartTotal: () => number;
   getCartItemCount: () => number;
   loading: boolean;
@@ -101,7 +102,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const addToCart = async (productId: number, quantity: number = 1): Promise<boolean> => {
+  const addToCart = async (productId: number, quantity: number = 1, size?: string): Promise<boolean> => {
     if (!user) {
       alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
       return false;
@@ -117,7 +118,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ productId, quantity }),
+        body: JSON.stringify({ productId, quantity, size }),
       });
 
       if (response.ok) {
@@ -137,7 +138,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateQuantity = async (productId: number, quantity: number): Promise<boolean> => {
+  const updateQuantity = async (productId: number, quantity: number, size?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -150,7 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ productId, quantity }),
+        body: JSON.stringify({ productId, quantity, size }),
       });
 
       if (response.ok) {
@@ -168,14 +169,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const removeFromCart = async (productId: number): Promise<boolean> => {
+  const removeFromCart = async (productId: number, size?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
       const token = getToken();
       if (!token) return false;
 
-      const response = await fetch(`/api/cart?productId=${productId}`, {
+      let url = `/api/cart?productId=${productId}`;
+      if (size) {
+        url += `&size=${encodeURIComponent(size)}`;
+      }
+
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

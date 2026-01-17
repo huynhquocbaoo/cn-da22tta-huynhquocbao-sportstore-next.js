@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Package, ShoppingCart, Users, TrendingUp, Eye, ChevronDown, ChevronRight, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Package, ShoppingCart, Users, TrendingUp, Eye, ChevronDown, ChevronRight, Calendar, DollarSign, Lock, Unlock, UserX, CreditCard } from 'lucide-react';
 import AdminGuard from '@/components/AdminGuard';
 import { getCategories, ProductCategory, getCategoryName } from '@/data/product-categories';
 import { getProductTypesByCategory, ProductType, getProductTypeName, getSportTypes, SportType, getSportTypeName } from '@/data/product-types';
@@ -16,9 +16,25 @@ interface Product {
   category: string;
   product_type: string;
   sport_type: string;
+  sizes: string;
   stock: number;
   slug: string;
   created_at: string;
+}
+
+// Các size cho áo và quần
+const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+// Các size mặc định cho giày
+const DEFAULT_SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+
+interface OrderItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  price: number;
+  size?: string;
+  product_name: string;
+  product_image: string;
 }
 
 interface Order {
@@ -31,12 +47,26 @@ interface Order {
   user_name: string;
   user_email: string;
   shipping_address: string;
+  payment_method?: string;
+  order_code?: string;
+  notes?: string;
+  items?: OrderItem[];
+}
+
+interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+  is_locked: number;
+  created_at: string;
 }
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'stock'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'stock' | 'users'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -50,8 +80,10 @@ export default function AdminPage() {
     category: '',
     product_type: '',
     sport_type: '',
-    stock: ''
+    stock: '',
+    sizes: [] as string[]
   });
+  const [customShoeSize, setCustomShoeSize] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -131,12 +163,72 @@ export default function AdminPage() {
       setLoading(true);
       await Promise.all([
         fetchProducts(),
-        fetchOrders()
+        fetchOrders(),
+        fetchUsers()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users');
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const handleLockUser = async (userId: number, isLocked: number) => {
+    const action = isLocked ? 'unlock' : 'lock';
+    const confirmMsg = isLocked ? 'Bạn có chắc muốn mở khóa tài khoản này?' : 'Bạn có chắc muốn khóa tài khoản này?';
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action })
+      });
+
+      if (response.ok) {
+        await fetchUsers();
+        alert(isLocked ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Lỗi cập nhật tài khoản');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Lỗi kết nối');
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, userName: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa tài khoản "${userName}"? Hành động này không thể hoàn tác!`)) return;
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      if (response.ok) {
+        await fetchUsers();
+        alert('Đã xóa tài khoản thành công');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Lỗi xóa tài khoản');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Lỗi kết nối');
     }
   };
 
@@ -163,21 +255,65 @@ export default function AdminPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Khi thay đổi category (loại sản phẩm), filter productTypes và reset product_type
+    // Khi thay đổi category (loại sản phẩm), filter productTypes và reset product_type, sizes
     if (name === 'category') {
       const filtered = getProductTypesByCategory(value);
       setFilteredProductTypes(filtered);
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        product_type: '' // Reset product_type khi thay đổi category
+        product_type: '', // Reset product_type khi thay đổi category
+        sizes: [] // Reset sizes khi thay đổi category
       }));
+      setCustomShoeSize('');
     } else {
       setFormData({
         ...formData,
         [name]: value
       });
     }
+  };
+
+  // Toggle size cho áo/quần
+  const handleSizeToggle = (size: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter(s => s !== size)
+        : [...prev.sizes, size]
+    }));
+  };
+
+  // Thêm size giày custom
+  const handleAddShoeSize = () => {
+    const size = customShoeSize.trim();
+    if (size && !formData.sizes.includes(size)) {
+      setFormData(prev => ({
+        ...prev,
+        sizes: [...prev.sizes, size].sort((a, b) => parseFloat(a) - parseFloat(b))
+      }));
+      setCustomShoeSize('');
+    }
+  };
+
+  // Xóa một size
+  const handleRemoveSize = (size: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.filter(s => s !== size)
+    }));
+  };
+
+  // Kiểm tra category có cần size không
+  const needsSizes = (category: string) => {
+    return ['ao', 'quan', 'giay'].includes(category);
+  };
+
+  // Lấy loại size dựa trên category
+  const getSizeType = (category: string): 'clothing' | 'shoes' | 'none' => {
+    if (category === 'ao' || category === 'quan') return 'clothing';
+    if (category === 'giay') return 'shoes';
+    return 'none';
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,7 +384,8 @@ export default function AdminPage() {
         category: formData.category,
         product_type: formData.product_type,
         sport_type: formData.sport_type,
-        stock: parseInt(formData.stock)
+        stock: parseInt(formData.stock),
+        sizes: formData.sizes.length > 0 ? JSON.stringify(formData.sizes) : null
       };
       
       // Chỉ thêm images nếu có upload ảnh mới
@@ -308,6 +445,17 @@ export default function AdminPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    
+    // Parse sizes từ JSON string
+    let parsedSizes: string[] = [];
+    if (product.sizes) {
+      try {
+        parsedSizes = JSON.parse(product.sizes);
+      } catch (e) {
+        parsedSizes = [];
+      }
+    }
+    
     setFormData({
       name: product.name,
       description: product.description,
@@ -316,10 +464,12 @@ export default function AdminPage() {
       category: product.category,
       product_type: product.product_type || '',
       sport_type: product.sport_type || '',
-      stock: product.stock.toString()
+      stock: product.stock.toString(),
+      sizes: parsedSizes
     });
     setImageFiles([]);
     setImagePreviews([]);
+    setCustomShoeSize('');
     
     // Filter product types based on selected category
     if (product.category) {
@@ -411,11 +561,13 @@ export default function AdminPage() {
       category: '',
       product_type: '',
       sport_type: '',
-      stock: ''
+      stock: '',
+      sizes: []
     });
     setImageFiles([]);
     setImagePreviews([]);
     setFilteredProductTypes([]);
+    setCustomShoeSize('');
     setEditingProduct(null);
     setShowAddForm(false);
   };
@@ -611,6 +763,16 @@ export default function AdminPage() {
                 >
                   Quản lý kho hàng
                 </button>
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'users'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-900 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Quản lý tài khoản
+                </button>
               </nav>
             </div>
 
@@ -761,6 +923,107 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                           />
                         </div>
+
+                        {/* Size Selection - hiển thị khi chọn áo, quần hoặc giày */}
+                        {needsSizes(formData.category) && (
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-900 mb-2">
+                              Chọn Size {getSizeType(formData.category) === 'clothing' ? '(Áo/Quần)' : '(Giày)'} *
+                            </label>
+                            
+                            {getSizeType(formData.category) === 'clothing' && (
+                              <div className="space-y-3">
+                                <div className="flex flex-wrap gap-2">
+                                  {CLOTHING_SIZES.map((size) => (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => handleSizeToggle(size)}
+                                      className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                                        formData.sizes.includes(size)
+                                          ? 'bg-blue-600 border-blue-600 text-white'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                                      }`}
+                                    >
+                                      {size}
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-gray-600">
+                                  Đã chọn: {formData.sizes.length > 0 ? formData.sizes.join(', ') : 'Chưa chọn size nào'}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {getSizeType(formData.category) === 'shoes' && (
+                              <div className="space-y-3">
+                                {/* Quick select common shoe sizes */}
+                                <div className="flex flex-wrap gap-2">
+                                  {DEFAULT_SHOE_SIZES.map((size) => (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => handleSizeToggle(size)}
+                                      className={`px-3 py-2 rounded-lg border-2 font-medium transition-all text-sm ${
+                                        formData.sizes.includes(size)
+                                          ? 'bg-blue-600 border-blue-600 text-white'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
+                                      }`}
+                                    >
+                                      {size}
+                                    </button>
+                                  ))}
+                                </div>
+                                
+                                {/* Custom size input */}
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={customShoeSize}
+                                    onChange={(e) => setCustomShoeSize(e.target.value)}
+                                    placeholder="Nhập size khác (VD: 46, 47...)"
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddShoeSize();
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleAddShoeSize}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                                  >
+                                    Thêm
+                                  </button>
+                                </div>
+                                
+                                {/* Display selected sizes */}
+                                {formData.sizes.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <span className="text-sm text-gray-700">Đã chọn:</span>
+                                    {formData.sizes.map((size) => (
+                                      <span
+                                        key={size}
+                                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                                      >
+                                        {size}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveSize(size)}
+                                          className="text-blue-600 hover:text-blue-800 ml-1"
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -1101,6 +1364,7 @@ export default function AdminPage() {
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Địa chỉ</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã CK</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
                                               </tr>
@@ -1137,6 +1401,17 @@ export default function AdminPage() {
                                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
                                                       {getStatusText(order.status)}
                                                     </span>
+                                                  </td>
+                                                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                    {order.payment_method === 'bank_transfer' && order.order_code ? (
+                                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-mono font-semibold rounded">
+                                                        {order.order_code}
+                                                      </span>
+                                                    ) : order.payment_method === 'bank_transfer' ? (
+                                                      <span className="text-gray-400 text-xs">—</span>
+                                                    ) : (
+                                                      <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">COD</span>
+                                                    )}
                                                   </td>
                                                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                                     {formatDate(order.created_at)}
@@ -1328,13 +1603,6 @@ export default function AdminPage() {
                                 >
                                   <Package className="h-4 w-4" />
                                 </button>
-                                <button
-                                  onClick={() => handleEdit(product)}
-                                  className="text-blue-600 hover:text-blue-900"
-                                  title="Chỉnh sửa sản phẩm"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1344,10 +1612,343 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+
+              {/* Users Tab */}
+              {activeTab === 'users' && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold">Quản lý tài khoản khách hàng</h3>
+                    <div className="text-sm text-gray-600">
+                      Tổng: {users.length} tài khoản | 
+                      Đang hoạt động: {users.filter(u => !u.is_locked).length} | 
+                      Đã khóa: {users.filter(u => u.is_locked).length}
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            ID
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            Thông tin
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            Ngày tạo
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            Trạng thái
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                            Thao tác
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                              Chưa có tài khoản khách hàng nào
+                            </td>
+                          </tr>
+                        ) : (
+                          users.map((user) => (
+                            <tr key={user.id} className={user.is_locked ? 'bg-red-50' : ''}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                #{user.id}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-10 w-10">
+                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                      <span className="text-blue-600 font-semibold text-sm">
+                                        {user.name.charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {user.name}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {user.email}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                {new Date(user.created_at).toLocaleDateString('vi-VN')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {user.is_locked ? (
+                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    🔒 Đã khóa
+                                  </span>
+                                ) : (
+                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    ✓ Hoạt động
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleLockUser(user.id, user.is_locked)}
+                                    className={`p-2 rounded-lg transition-colors ${
+                                      user.is_locked 
+                                        ? 'text-green-600 hover:bg-green-50' 
+                                        : 'text-yellow-600 hover:bg-yellow-50'
+                                    }`}
+                                    title={user.is_locked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                                  >
+                                    {user.is_locked ? (
+                                      <Unlock className="h-5 w-5" />
+                                    ) : (
+                                      <Lock className="h-5 w-5" />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(user.id, user.name)}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Xóa tài khoản"
+                                  >
+                                    <UserX className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
         </div>
+
+        {/* Order Detail Modal */}
+        {selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Chi tiết đơn hàng #{selectedOrder.id}
+                </h2>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Order Status */}
+                <div className="flex items-center justify-between">
+                  <span className={`px-4 py-2 text-sm font-semibold rounded-full ${getStatusColor(selectedOrder.status)}`}>
+                    {getStatusText(selectedOrder.status)}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {formatDate(selectedOrder.created_at)}
+                  </span>
+                </div>
+
+                {/* Customer Info */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-blue-600" />
+                    Thông tin khách hàng
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Họ tên:</span>
+                      <p className="font-medium text-gray-900">{selectedOrder.user_name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Email:</span>
+                      <p className="font-medium text-gray-900">{selectedOrder.user_email || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                {selectedOrder.shipping_address && (
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                      Địa chỉ giao hàng
+                    </h3>
+                    <p className="text-sm text-gray-700">
+                      {formatAddress(selectedOrder.shipping_address)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Payment Method Info */}
+                <div className={`rounded-xl p-4 ${selectedOrder.payment_method === 'bank_transfer' ? 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200' : 'bg-gray-50'}`}>
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
+                    Phương thức thanh toán
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        selectedOrder.payment_method === 'bank_transfer' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {selectedOrder.payment_method === 'bank_transfer' ? '💳 Chuyển khoản ngân hàng' : '🚚 Thanh toán khi nhận hàng (COD)'}
+                      </span>
+                    </div>
+                    
+                    {/* Show order code for bank transfer */}
+                    {selectedOrder.payment_method === 'bank_transfer' && (selectedOrder as any).order_code && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                        <p className="text-xs text-gray-500 mb-1">Mã nội dung chuyển khoản:</p>
+                        <p className="text-lg font-bold text-blue-700 font-mono tracking-wider">
+                          {(selectedOrder as any).order_code}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Kiểm tra nội dung CK trong tài khoản ngân hàng để xác nhận thanh toán
+                        </p>
+                      </div>
+                    )}
+                    
+                    {selectedOrder.payment_method === 'bank_transfer' && !(selectedOrder as any).order_code && (
+                      <p className="text-sm text-yellow-600 italic">
+                        ⚠️ Đơn hàng cũ - không có mã chuyển khoản
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Package className="h-5 w-5 mr-2 text-blue-600" />
+                    Sản phẩm đã đặt ({(selectedOrder as any).items?.length || 0} sản phẩm)
+                  </h3>
+                  <div className="space-y-3">
+                    {(selectedOrder as any).items?.map((item: any) => (
+                      <div key={item.id} className="flex items-center gap-4 bg-gray-50 rounded-xl p-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                          {item.product_image ? (
+                            <img
+                              src={getImageUrl(item.product_image)}
+                              alt={item.product_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              📦
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 truncate">
+                            {item.product_name || `Sản phẩm #${item.product_id}`}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <span>SL: {item.quantity}</span>
+                            {item.size && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                                Size: {item.size}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatPrice(item.price)} x {item.quantity}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Order Total */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900">Tổng cộng:</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {formatPrice(selectedOrder.total_amount)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  {selectedOrder.status === 'pending' && (
+                    <button
+                      onClick={() => {
+                        handleUpdateOrderStatus(selectedOrder.id, 'confirmed');
+                        setSelectedOrder(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      ✓ Xác nhận đơn
+                    </button>
+                  )}
+                  {selectedOrder.status === 'confirmed' && (
+                    <button
+                      onClick={() => {
+                        handleUpdateOrderStatus(selectedOrder.id, 'shipped');
+                        setSelectedOrder(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    >
+                      🚚 Gửi hàng
+                    </button>
+                  )}
+                  {selectedOrder.status === 'shipped' && (
+                    <button
+                      onClick={() => {
+                        handleUpdateOrderStatus(selectedOrder.id, 'delivered');
+                        setSelectedOrder(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      ✓ Đã giao hàng
+                    </button>
+                  )}
+                  {(selectedOrder.status === 'pending' || selectedOrder.status === 'confirmed') && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Bạn có chắc muốn hủy đơn hàng này?')) {
+                          handleUpdateOrderStatus(selectedOrder.id, 'cancelled');
+                          setSelectedOrder(null);
+                        }
+                      }}
+                      className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                    >
+                      Hủy đơn
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminGuard>
   );

@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
         o.user_id,
         o.total_amount,
         o.status,
+        o.payment_method,
+        o.order_code,
         o.created_at,
         o.updated_at,
         o.shipping_address,

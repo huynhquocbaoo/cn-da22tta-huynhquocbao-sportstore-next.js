@@ -25,6 +25,10 @@ export async function GET(
         o.user_id,
         o.total_amount,
         o.status,
+        o.shipping_address,
+        o.payment_method,
+        o.order_code,
+        o.notes,
         o.created_at,
         o.updated_at,
         u.name as user_name,
@@ -48,6 +52,7 @@ export async function GET(
         oi.product_id,
         oi.quantity,
         oi.price,
+        oi.size,
         p.name as product_name,
         p.image as product_image
       FROM order_items oi

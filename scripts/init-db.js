@@ -43,10 +43,37 @@ async function initializeDatabase() {
         password VARCHAR(255) NOT NULL,
         role ENUM('user', 'admin') DEFAULT 'user',
         name VARCHAR(255) NOT NULL,
+        is_locked TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Table users created or already exists');
+
+    // Thêm cột is_locked nếu chưa có
+    try {
+      await connection.query(`
+        ALTER TABLE users 
+        ADD COLUMN is_locked TINYINT(1) DEFAULT 0
+      `);
+      console.log('✅ Added is_locked column to users table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
+
+    // Thêm cột google_id nếu chưa có (cho đăng nhập Google)
+    try {
+      await connection.query(`
+        ALTER TABLE users 
+        ADD COLUMN google_id VARCHAR(255)
+      `);
+      console.log('✅ Added google_id column to users table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
 
     // Thêm cột role nếu chưa có (cho database cũ)
     try {
@@ -74,6 +101,7 @@ async function initializeDatabase() {
         images LONGTEXT,
         product_type VARCHAR(100),
         sport_type VARCHAR(100),
+        sizes TEXT,
         stock INT DEFAULT 0,
         average_rating DECIMAL(3,2) DEFAULT 0.00,
         total_reviews INT DEFAULT 0,
@@ -132,6 +160,19 @@ async function initializeDatabase() {
       }
     }
 
+    // Thêm cột sizes nếu chưa có (lưu JSON array các size)
+    try {
+      await connection.query(`
+        ALTER TABLE products 
+        ADD COLUMN sizes TEXT
+      `);
+      console.log('✅ Added sizes column to products table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
+
     // Thêm cột average_rating và total_reviews nếu chưa có
     try {
       await connection.query(`
@@ -153,13 +194,60 @@ async function initializeDatabase() {
         user_id INT NOT NULL,
         product_id INT NOT NULL,
         quantity INT NOT NULL DEFAULT 1,
+        size VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-        UNIQUE KEY unique_user_product (user_id, product_id)
+        UNIQUE KEY unique_user_product_size (user_id, product_id, size)
       )
     `);
     console.log('✅ Table cart created or already exists');
+
+    // Thêm cột size vào cart nếu chưa có
+    try {
+      await connection.query(`
+        ALTER TABLE cart 
+        ADD COLUMN size VARCHAR(20)
+      `);
+      console.log('✅ Added size column to cart table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
+
+    // Cập nhật UNIQUE KEY để bao gồm size
+    try {
+      // Thêm index cho user_id trước để có thể xóa unique key cũ
+      try {
+        await connection.query(`ALTER TABLE cart ADD INDEX idx_user_id (user_id)`);
+      } catch (e) {
+        // Index might already exist
+      }
+      
+      // Xóa unique key cũ (không có size)
+      try {
+        await connection.query(`ALTER TABLE cart DROP INDEX unique_user_product`);
+        console.log('✅ Dropped old unique_user_product constraint');
+      } catch (e) {
+        // Index might not exist
+      }
+      
+      // Thêm unique key mới (có size)
+      try {
+        await connection.query(`
+          ALTER TABLE cart 
+          ADD UNIQUE KEY unique_user_product_size (user_id, product_id, size)
+        `);
+        console.log('✅ Added unique_user_product_size constraint on cart table');
+      } catch (e) {
+        if (!e.message.includes('Duplicate key name')) {
+          throw e;
+        }
+      }
+    } catch (error) {
+      console.log('ℹ️  Cart constraint update skipped:', error.message);
+    }
 
     // Tạo bảng orders
     await connection.query(`
@@ -170,6 +258,7 @@ async function initializeDatabase() {
         status ENUM('pending', 'confirmed', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
         shipping_address TEXT,
         payment_method VARCHAR(50) DEFAULT 'cod',
+        order_code VARCHAR(20),
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -189,6 +278,19 @@ async function initializeDatabase() {
       console.log('ℹ️  total_amount column modification skipped');
     }
 
+    // Thêm cột order_code nếu chưa có (mã đơn hàng cho chuyển khoản)
+    try {
+      await connection.query(`
+        ALTER TABLE orders 
+        ADD COLUMN order_code VARCHAR(20)
+      `);
+      console.log('✅ Added order_code column to orders table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
+
     // Tạo bảng order_items
     await connection.query(`
       CREATE TABLE IF NOT EXISTS order_items (
@@ -197,12 +299,26 @@ async function initializeDatabase() {
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         price DECIMAL(10,2) NOT NULL,
+        size VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
       )
     `);
     console.log('✅ Table order_items created or already exists');
+
+    // Thêm cột size vào order_items nếu chưa có
+    try {
+      await connection.query(`
+        ALTER TABLE order_items 
+        ADD COLUMN size VARCHAR(20)
+      `);
+      console.log('✅ Added size column to order_items table');
+    } catch (error) {
+      if (!error.message.includes('Duplicate column name')) {
+        throw error;
+      }
+    }
 
     // Tạo bảng reviews
     await connection.query(`

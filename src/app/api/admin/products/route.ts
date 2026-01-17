@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 // POST - Thêm sản phẩm mới
 export async function POST(request: NextRequest) {
   try {
-    const { name, description, price, image, images, category, product_type, sport_type, stock } = await request.json();
+    const { name, description, price, image, images, category, product_type, sport_type, sizes, stock } = await request.json();
 
     if (!name || !price || !category) {
       return NextResponse.json(
@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     const conn = await pool.getConnection();
     
     try {
-      // Thêm sản phẩm mới với cột images, product_type, sport_type
+      // Thêm sản phẩm mới với cột images, product_type, sport_type, sizes
       const [result] = await conn.execute(
-        'INSERT INTO products (name, description, price, image, images, category, product_type, sport_type, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [name, description || '', price, image || '', images || '[]', category, product_type || '', sport_type || '', stock || 0]
+        'INSERT INTO products (name, description, price, image, images, category, product_type, sport_type, sizes, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [name, description || '', price, image || '', images || '[]', category, product_type || '', sport_type || '', sizes || null, stock || 0]
       );
 
     return NextResponse.json(

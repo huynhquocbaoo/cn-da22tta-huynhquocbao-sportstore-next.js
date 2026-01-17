@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
               oi.product_id,
               oi.quantity,
               oi.price,
+              oi.size,
               p.name as product_name,
               p.image as product_image,
               CASE WHEN r.id IS NULL THEN 0 ELSE 1 END as hasReviewed
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { items, shippingAddress, paymentMethod, notes } = await request.json();
+    const { items, shippingAddress, paymentMethod, notes, orderCode } = await request.json();
     
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Không có sản phẩm nào trong giỏ hàng' }, { status: 400 });
@@ -111,11 +112,11 @@ export async function POST(request: NextRequest) {
         totalAmount += item.price * item.quantity;
       }
 
-      // Tạo đơn hàng
+      // Tạo đơn hàng (bao gồm order_code nếu là chuyển khoản)
       const [result] = await pool.execute(`
-        INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, notes)
-        VALUES (?, ?, 'pending', ?, ?, ?)
-      `, [userId, totalAmount, JSON.stringify(shippingAddress), paymentMethod, notes || '']);
+        INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method, order_code, notes)
+        VALUES (?, ?, 'pending', ?, ?, ?, ?)
+      `, [userId, totalAmount, JSON.stringify(shippingAddress), paymentMethod, orderCode || null, notes || '']);
 
       const orderId = (result as any).insertId;
 
@@ -125,7 +126,8 @@ export async function POST(request: NextRequest) {
           orderId,
           productId: item.product_id,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          size: item.size
         });
 
         // Kiểm tra sản phẩm có tồn tại không
@@ -140,9 +142,9 @@ export async function POST(request: NextRequest) {
         }
 
         await pool.execute(`
-          INSERT INTO order_items (order_id, product_id, quantity, price)
-          VALUES (?, ?, ?, ?)
-        `, [orderId, item.product_id, item.quantity, item.price]);
+          INSERT INTO order_items (order_id, product_id, quantity, price, size)
+          VALUES (?, ?, ?, ?, ?)
+        `, [orderId, item.product_id, item.quantity, item.price, item.size || null]);
       }
 
       return NextResponse.json({ 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react';
 
 interface User {
   id: number;
@@ -23,27 +24,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    // Kiểm tra token trong localStorage khi component mount
-    const token = localStorage.getItem('token');
-    console.log('🔒 AuthContext: Loading user from localStorage', { token: !!token });
-    
-    if (token) {
-      try {
-        const userData = JSON.parse(localStorage.getItem('user') || 'null');
-        console.log('🔒 AuthContext: User data loaded', userData);
-        if (userData && userData.id) {
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('🔒 AuthContext: Error parsing user data', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      }
+    // Nếu có NextAuth session (đăng nhập bằng Google)
+    if (status === 'authenticated' && session?.user) {
+      const sessionUser = session.user as any;
+      const userData: User = {
+        id: parseInt(sessionUser.id) || 0,
+        email: sessionUser.email || '',
+        name: sessionUser.name || '',
+        role: sessionUser.role || 'user'
+      };
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }, []);
+
+    // Kiểm tra token trong localStorage khi component mount
+    if (status !== 'loading') {
+      const token = localStorage.getItem('token');
+      console.log('🔒 AuthContext: Loading user from localStorage', { token: !!token });
+      
+      if (token) {
+        try {
+          const userData = JSON.parse(localStorage.getItem('user') || 'null');
+          console.log('🔒 AuthContext: User data loaded', userData);
+          if (userData && userData.id) {
+            setUser(userData);
+          }
+        } catch (error) {
+          console.error('🔒 AuthContext: Error parsing user data', error);
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+        }
+      }
+      setLoading(false);
+    }
+  }, [session, status]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -101,12 +120,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     // Xóa cookie
     document.cookie = 'token=; path=/; max-age=0';
+    // Sign out từ NextAuth nếu đang sử dụng
+    if (session) {
+      await nextAuthSignOut({ redirect: false });
+    }
   };
 
   const updateUser = (userData: User) => {

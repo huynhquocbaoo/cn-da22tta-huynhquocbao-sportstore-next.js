@@ -10,7 +10,7 @@ export async function PUT(
     const { id } = await params;
     const productId = parseInt(id);
     const data = await request.json();
-    const { name, description, price, image, images, category, product_type, sport_type, stock } = data;
+    const { name, description, price, image, images, category, product_type, sport_type, sizes, stock } = data;
 
     const pool = await getConnection();
     const conn = await pool.getConnection();
@@ -47,14 +47,14 @@ export async function PUT(
       // Nếu có images mới, cập nhật cả images
       if (hasNewImages) {
         await conn.execute(
-          'UPDATE products SET name = ?, description = ?, price = ?, image = ?, images = ?, category = ?, product_type = ?, sport_type = ?, stock = ? WHERE id = ?',
-          [name, description || '', price, image || '', images, category, product_type || '', sport_type || '', stock || 0, productId]
+          'UPDATE products SET name = ?, description = ?, price = ?, image = ?, images = ?, category = ?, product_type = ?, sport_type = ?, sizes = ?, stock = ? WHERE id = ?',
+          [name, description || '', price, image || '', images, category, product_type || '', sport_type || '', sizes || null, stock || 0, productId]
         );
       } else {
         // Không cập nhật images, giữ nguyên ảnh cũ
         await conn.execute(
-          'UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ?, product_type = ?, sport_type = ?, stock = ? WHERE id = ?',
-          [name, description || '', price, image || '', category, product_type || '', sport_type || '', stock || 0, productId]
+          'UPDATE products SET name = ?, description = ?, price = ?, image = ?, category = ?, product_type = ?, sport_type = ?, sizes = ?, stock = ? WHERE id = ?',
+          [name, description || '', price, image || '', category, product_type || '', sport_type || '', sizes || null, stock || 0, productId]
         );
       }
 

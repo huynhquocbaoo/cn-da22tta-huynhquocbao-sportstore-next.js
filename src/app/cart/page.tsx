@@ -11,13 +11,13 @@ export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
   const { user } = useAuth();
 
-  const handleUpdateQuantity = async (productId: number, newQuantity: number) => {
+  const handleUpdateQuantity = async (productId: number, newQuantity: number, size?: string) => {
     if (newQuantity < 1) return;
-    await updateQuantity(productId, newQuantity);
+    await updateQuantity(productId, newQuantity, size);
   };
 
-  const handleRemoveItem = async (productId: number) => {
-    await removeFromCart(productId);
+  const handleRemoveItem = async (productId: number, size?: string) => {
+    await removeFromCart(productId, size);
   };
 
   const formatPrice = (price: number) => {
@@ -95,7 +95,7 @@ export default function CartPage() {
                 
                 <div className="divide-y divide-gray-200">
                   {cartItems?.map((item) => (
-                    <div key={item.id} className="p-6">
+                    <div key={`${item.id}-${item.size || 'no-size'}`} className="p-6">
                       <div className="flex items-start space-x-4">
                         {/* Product Image */}
                         <div className="flex-shrink-0">
@@ -117,9 +117,18 @@ export default function CartPage() {
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
                             {item.name}
                           </h3>
+                          
+                          {/* Size Badge */}
+                          {item.size && (
+                            <div className="mb-2">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Size: {item.size}
+                              </span>
+                            </div>
+                          )}
                           
                           <div className="space-y-1 text-sm text-gray-600">
                             <p>{item.description}</p>
@@ -137,7 +146,7 @@ export default function CartPage() {
                         <div className="flex flex-col items-end space-y-4">
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => handleUpdateQuantity(item.product_id, item.quantity - 1)}
+                              onClick={() => handleUpdateQuantity(item.product_id, item.quantity - 1, item.size)}
                               disabled={item.quantity <= 1}
                               className="p-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Giảm số lượng"
@@ -150,7 +159,7 @@ export default function CartPage() {
                             </span>
                             
                             <button
-                              onClick={() => handleUpdateQuantity(item.product_id, item.quantity + 1)}
+                              onClick={() => handleUpdateQuantity(item.product_id, item.quantity + 1, item.size)}
                               className="p-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Tăng số lượng"
                             >
@@ -167,7 +176,7 @@ export default function CartPage() {
 
                           {/* Remove Button */}
                           <button
-                            onClick={() => handleRemoveItem(item.product_id)}
+                            onClick={() => handleRemoveItem(item.product_id, item.size)}
                             className="text-red-600 hover:text-red-700 text-sm font-medium"
                             title="Xóa sản phẩm"
                           >

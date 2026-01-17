@@ -97,10 +97,24 @@ export async function GET(
           // If parsing fails, keep empty array
         }
       }
+
+      // Parse sizes JSON string to array
+      let sizesArray: string[] = [];
+      if (productRaw.sizes) {
+        try {
+          const parsed = JSON.parse(productRaw.sizes);
+          if (Array.isArray(parsed)) {
+            sizesArray = parsed;
+          }
+        } catch {
+          // If parsing fails, keep empty array
+        }
+      }
       
       const product = {
         ...productRaw,
-        images: imagesArray
+        images: imagesArray,
+        sizes: sizesArray
       };
 
       const [reviews] = await conn.execute<ReviewRow[]>(

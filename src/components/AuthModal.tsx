@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, ArrowLeft, CheckCircle, KeyRound } from 'lucide-react';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -289,6 +290,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
             >
               {loading ? 'Đang xử lý...' : 'Đăng nhập'}
             </button>
+
+            {/* Divider */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">hoặc</span>
+              </div>
+            </div>
+
+            {/* Google Sign In */}
+            <GoogleSignInButton text="Đăng nhập với Google" />
           </form>
         )}
 
@@ -362,6 +376,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
             >
               {loading ? 'Đang xử lý...' : 'Đăng ký'}
             </button>
+
+            {/* Divider */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">hoặc</span>
+              </div>
+            </div>
+
+            {/* Google Sign Up */}
+            <GoogleSignInButton text="Đăng ký với Google" />
           </form>
         )}
 

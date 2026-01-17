@@ -133,3 +133,85 @@ body {
 .dark .bg-white\/30 {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
+
+/* Dropdown menu animation */
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+
+.dropdown-menu-enter {
+  animation: dropdownSlideIn 0.2s ease-out forwards;
+}
+
+.dropdown-menu-exit {
+  animation: dropdownSlideOut 0.15s ease-in forwards;
+}
+
+/* Menu item hover effect */
+.menu-item-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item-hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.menu-item-hover:hover::before {
+  transform: scaleY(1);
+}
+
+/* Slide in animations for checkout */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: slideInFromTop 0.3s ease-out forwards;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-in-from-top-2 {
+  animation: slideInFromTop 0.3s ease-out forwards;
+}

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     try {
       // Tìm user theo email
       const [users] = await conn.execute(
-        'SELECT id, email, password, name, role FROM users WHERE email = ?',
+        'SELECT id, email, password, name, role, is_locked FROM users WHERE email = ?',
         [email]
       );
 
@@ -33,6 +33,14 @@ export async function POST(request: NextRequest) {
       }
 
       const user = (users as any)[0];
+
+      // Kiểm tra tài khoản bị khóa
+      if (user.is_locked) {
+        return NextResponse.json(
+          { error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin.' },
+          { status: 403 }
+        );
+      }
 
       // Kiểm tra password
       const isValidPassword = await bcrypt.compare(password, user.password);

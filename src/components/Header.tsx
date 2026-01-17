@@ -50,37 +50,38 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Link href="/" className="flex items-center group">
+              <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg">
                 <span className="text-white font-bold text-lg">S</span>
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">SportStore</span>
+              <span className="ml-2 text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">SportStore</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex space-x-6">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                className="relative text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 group"
               >
                 {item.name}
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full"></span>
               </Link>
             ))}
           </nav>
 
           {/* Right side icons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <Link 
               href="/wishlist"
-              className="relative p-2 text-gray-700 hover:text-red-500 transition-colors"
+              className="relative p-2 text-gray-700 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300 hover:scale-110"
               title="Yêu thích"
             >
               <Heart className="h-6 w-6" />
               {getWishlistCount() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                   {getWishlistCount()}
                 </span>
               )}
@@ -90,22 +91,22 @@ export default function Header() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 hover:shadow-md rounded-xl transition-all duration-300 hover:scale-105"
                 >
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center transition-transform duration-300 hover:rotate-6">
                     <span className="text-white font-semibold text-sm">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700 hidden sm:block max-w-24 truncate">
+                  <span className="text-sm font-semibold text-black max-w-32 truncate">
                     {user.name}
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* User Dropdown Menu */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 dropdown-menu-enter origin-top-right">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
@@ -115,21 +116,21 @@ export default function Header() {
                         setIsProfileModalOpen(true);
                         setIsUserMenuOpen(false);
                       }}
-                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="menu-item-hover w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 hover:pl-5"
                     >
-                      <Settings className="h-4 w-4" />
+                      <Settings className="h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />
                       <span>Xem thông tin</span>
                     </button>
                     <button
                       onClick={toggleTheme}
-                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="menu-item-hover w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 hover:pl-5"
                     >
                       <div className="flex items-center space-x-3">
                         {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                         <span>Chế độ tối</span>
                       </div>
-                      <div className={`relative w-10 h-5 rounded-full transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      <div className={`relative w-10 h-5 rounded-full transition-all duration-300 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'}`} />
                       </div>
                     </button>
                     <div className="border-t border-gray-100 my-1"></div>
@@ -138,7 +139,7 @@ export default function Header() {
                         logout();
                         setIsUserMenuOpen(false);
                       }}
-                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="menu-item-hover w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-all duration-200 hover:pl-5"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Đăng xuất</span>
@@ -159,11 +160,13 @@ export default function Header() {
               </button>
             )}
             
-            <Link href="/cart" className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors">
+            <Link href="/cart" className="relative p-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-300 hover:scale-110">
               <ShoppingCart className="h-6 w-6" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {getCartItemCount()}
-              </span>
+              {getCartItemCount() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-bounce">
+                  {getCartItemCount()}
+                </span>
+              )}
             </Link>
 
             {/* Mobile menu button */}
